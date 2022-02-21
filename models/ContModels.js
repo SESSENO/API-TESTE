@@ -2,7 +2,7 @@ const { model, Schema } = require("mongoose");
 
 const ContSchema = model("Contabilidade", new Schema({
   date: {
-    type: String,
+    type: Date,
     required: true,
   },
   value: {
