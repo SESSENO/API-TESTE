@@ -7,24 +7,9 @@ class ContController {
     static async addCont(req, res){
         const { value, title, description, opcode } = req.body;
         let date = req.body.date;
-        // date = new Date(2022, 11, 25);
-
-        // date = date.getMonth(date);
+        date = new Date(date);
         let filter = new Date(date);
-        // d = d.getDay;
-        // date = req.body.date;
-        // date = date.toDateString();
-        // let mes = date.getMonth();
-        // var d = date.getDate();
-        console.log(d);
-        // console.log(date);
-        // date = req.body.date;
-        // d = date.getMonth;
-        // console.log(d);
-        let filterDate = filter.getMonth()+1;
-        console.log(filterDate);
         const cont = ContModels({date, value, title, description, opcode});
-        console.log(cont);
         await cont.save();
         res.status(201).json({message: 'Adicionado, deu certo!!'})
     }
@@ -38,9 +23,6 @@ class ContController {
             res.status(401).json({message: `parâmetro-remoção-nulo`});
             return
         }
-
-        // let conteudoTeste = await ContSchema.findOne({$match: {_id:_id}});
-        // console.log(conteudoTeste);
 
         await ContSchema.findByIdAndDelete(_id);
         
@@ -85,7 +67,28 @@ class ContController {
         res.status(202).json(media);
     }
 
-    
+    static async monthReportRevenue(req, res){
+        let {month}  = req.params;
+        console.log(month);
+        const desc= [];
+        let soma =0;
+        const cont = await ContSchema.find({date: {$gte: new Date(`2022,${month},1`), $lte: new Date(`2028,${month},31`)}}).find({opcode:true});
+        for(let desc of cont){soma = soma + desc.value};
+        res.status(201).json({message: `Resultado RECEITAS: ${soma}`});
+     }
+
+    static async monthReportExpense(req, res){
+        let {month}  = req.params;
+        console.log(month);
+        const desc= [];
+        let soma =0;
+        const cont = await ContSchema.find({date: {$gte: new Date(`2022,${month},1`), $lte: new Date(`2028,${month},31`)}}).find({opcode:false});
+        for(let desc of cont){soma = soma + desc.value};
+        res.status(201).json({message: `Resultado DESPESAS: ${soma}`});
+
+    }
+
+        
 }
 
 module.exports = ContController;
