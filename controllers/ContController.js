@@ -1,3 +1,5 @@
+const e = require("express");
+const { response } = require("express");
 const ContSchema = require("../models/ContModels");
 const ContModels = require("../models/ContModels");
 
@@ -23,7 +25,14 @@ class ContController {
             res.status(401).json({message: `parâmetro-remoção-nulo`});
             return
         }
+        const cont = await ContSchema.find({_id:_id});
+        console.log(cont);
 
+        if(cont == null || !cont || cont == ""){
+            res.status(401).json({message: `parâmetro-${_id}-inexistente`});
+            return
+        }
+        
         await ContSchema.findByIdAndDelete(_id);
         
         res.status(202).json({message: `registro- ${_id} - removido`});
@@ -31,9 +40,17 @@ class ContController {
 
     static async updateCont(req, res){
         
-        const { _id, value, title, description, opcode } = req.body;
+        const { _id, date, value, title, description, opcode } = req.body;
 
-        await ContSchema.findByIdAndUpdate(_id, {value, title, description, opcode});
+        const cont = await ContSchema.find({_id:_id});
+        console.log(cont);
+
+        if(cont == null || !cont || cont == ""){
+            res.status(401).json({message: `parâmetro-${_id}-inexistente`});
+            return
+        }
+
+        await ContSchema.findByIdAndUpdate(_id, {value, date,  title, description, opcode});
 
         res.status(202).json({message: `registro - ${_id} - atualizado`});
     }
@@ -50,7 +67,6 @@ class ContController {
     }
 
     static async showAvExpenses(req, res){
-        const{opcode} = req.params;
         let soma =0;
         const cont = await ContSchema.find({opcode: false});
         for(let opcode of cont){ soma = soma + opcode.value}
@@ -59,7 +75,6 @@ class ContController {
     }
 
     static async showAvRevenue(req, res){
-        const{opcode} = req.params;
         let soma =0;
         const cont = await ContSchema.find({opcode: true});
         for(let opcode of cont){ soma = soma + opcode.value}
@@ -67,28 +82,54 @@ class ContController {
         res.status(202).json(media);
     }
 
-    static async monthReportRevenue(req, res){
-        let {month}  = req.params;
-        console.log(month);
-        const desc= [];
-        let soma =0;
-        const cont = await ContSchema.find({date: {$gte: new Date(`2022,${month},1`), $lte: new Date(`2028,${month},31`)}}).find({opcode:true});
-        for(let desc of cont){soma = soma + desc.value};
-        res.status(201).json({message: `Resultado RECEITAS: ${soma}`});
-     }
+    static async monthReport(req, res){
+        let {month, year, opcode}  = req.params;
 
-    static async monthReportExpense(req, res){
-        let {month}  = req.params;
-        console.log(month);
+        if(opcode != 1 && opcode!=0)
+        {
+            res.status(402).json({message: `lista-parâmetros-inválidos-nulo`});
+            return
+        }
+
         const desc= [];
         let soma =0;
-        const cont = await ContSchema.find({date: {$gte: new Date(`2022,${month},1`), $lte: new Date(`2028,${month},31`)}}).find({opcode:false});
-        for(let desc of cont){soma = soma + desc.value};
-        res.status(201).json({message: `Resultado DESPESAS: ${soma}`});
+        const cont = await ContSchema.find({date: {$gte: new Date(`${year},${month-1},30`), $lte: new Date(`${year},${month},30`)}}).find({opcode:`${opcode}`});
+        for(let desc of cont){soma += desc.value};
+        console.log(cont, month, year, opcode);
+
+
+        if(opcode == true){ 
+            res.status(201).json({histórico_receitas : cont, receitas: `RECEITAS ${month}/${year} : R$ ${soma}`});
+            return
+        }else{
+            res.status(201).json({histórico_despesas : cont, despesas: `DESPESAS ${month}/${year} : R$ ${soma}`});
+
+        }
 
     }
 
+    static async balanceReport(req, res){
+        let {month, year}  = req.params;
+
+
+        const descR = [];
+        const descD = [];
+        let somaR =0;
+        let somaD =0;
+        const contR = await ContSchema.find({date: {$gte: new Date(`${year},${month-1},30`), $lte: new Date(`${year},${month},30`)}}).find({opcode: 1});
+        for(let descR of contR){somaR += descR.value};
+
+        const contD = await ContSchema.find({date: {$gte: new Date(`${year},${month-1},30`), $lte: new Date(`${year},${month},30`)}}).find({opcode: 0});
+        for(let descD of contD){somaD += descD.value};
+        console.log(month, year);
+
+        let resultado = parseFloat(somaR - somaD);
+        console.log(resultado);
+
+        res.status(201).json({despesas: `DESPESAS ${month}/${year} : R$ ${somaD}`, receitas: `RECEITAS ${month}/${year} : R$ ${somaR}`, resultado});
         
-}
+        }
+    }
+
 
 module.exports = ContController;

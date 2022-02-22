@@ -8,8 +8,8 @@ router.get("/reportExp", ContController.showAvExpenses);
 router.get("/reportRev", ContController.showAvRevenue);
 router.post("/remove", ContController.removeCont);
 router.post("/update", ContController.updateCont);
-router.get("/monthReportRev/:month", ContController.monthReportRevenue);
-router.get("/monthReportExp/:month", ContController.monthReportExpense);
+router.get("/monthReport/:month/:year/:opcode", ContController.monthReport);
+router.get("/balance/:month/:year", ContController.balanceReport);
 
 module.exports = router;
 
